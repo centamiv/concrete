@@ -139,9 +139,9 @@ class BuilderTest extends TestCase
 
         $stmt = $this->createMock(\PDOStatement::class);
         $stmt->expects($this->once())->method('execute');
-        $stmt->expects($this->exactly(2))
-            ->method('fetch')
-            ->willReturnOnConsecutiveCalls(['id' => 1], false);
+        $stmt->expects($this->once())
+            ->method('fetchAll')
+            ->willReturn([['id' => 1]]);
 
         $pdo = $this->createMock(\PDO::class);
         $pdo->expects($this->once())->method('prepare')->willReturn($stmt);

@@ -8,7 +8,7 @@ class ModelTest extends TestCase
 {
     public function testCanBeInstantiated()
     {
-        // Creiamo una classe figlia fittizia per testare l'astratta
+        // Create a dummy child class to test the abstract one
         $model = new class extends Model {};
         $this->assertInstanceOf(Model::class, $model);
     }

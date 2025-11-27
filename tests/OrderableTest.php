@@ -11,12 +11,12 @@ class OrderableTest extends TestCase
         $model = new class extends Model {
             public const TABLE = 'test';
         };
-        
+
         $builder = $this->getMockBuilder(\Concrete\Query\Builder::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['sql'])
             ->getMock();
-        $builder->table($model::class)
+        $builder->table(get_class($model))
             ->orderBy('foo', 'DESC')
             ->orderBy('bar');
         $builder->expects($this->once())

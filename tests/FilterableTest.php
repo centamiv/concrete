@@ -11,13 +11,13 @@ class FilterableTest extends TestCase
         $model = new class extends Model {
             public const TABLE = 'test';
         };
-        
+
         $builder = $this->getMockBuilder(\Concrete\Query\Builder::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['sql'])
             ->getMock();
-        $builder->table($model::class)->where('foo', '=', 'bar');
-        // Verifica che la query SQL contenga la clausola WHERE corretta
+        $builder->table(get_class($model))->where('foo', '=', 'bar');
+        // Verify that the SQL query contains the correct WHERE clause
         $builder->expects($this->once())
             ->method('sql')
             ->willReturn('SELECT * FROM test WHERE foo = :foo_0');

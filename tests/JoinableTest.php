@@ -11,12 +11,12 @@ class JoinableTest extends TestCase
         $model = new class extends Model {
             public const TABLE = 'test';
         };
-        
+
         $builder = $this->getMockBuilder(\Concrete\Query\Builder::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['sql'])
             ->getMock();
-        $builder->table($model::class)
+        $builder->table(get_class($model))
             ->join('table2', 'table1.id', '=', 'table2.ref_id')
             ->leftJoin('table3', 'table1.id', '=', 'table3.ref_id');
         $builder->expects($this->once())
