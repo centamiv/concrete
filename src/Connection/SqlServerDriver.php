@@ -13,7 +13,7 @@ class SqlServerDriver implements DriverInterface
      * @param string $pass
      * @return \PDO
      */
-    public function connect($host, $db, $user, $pass): \PDO
+    public function connect(string $host, string $db, string $user, string $pass): \PDO
     {
         $dsn = "sqlsrv:Server=$host;Database=$db";
         return new \PDO($dsn, $user, $pass, [
@@ -26,7 +26,7 @@ class SqlServerDriver implements DriverInterface
      * Compile the SELECT query.
      *
      * @param string $table
-     * @param array $cols
+     * @param array $columns
      * @param array $wheres
      * @param array $orders
      * @param array $joins
@@ -34,7 +34,7 @@ class SqlServerDriver implements DriverInterface
      * @param int|null $offset
      * @return string
      */
-    public function compileSelect($table, $cols, $wheres, $orders, $joins, ?int $limit = null, ?int $offset = null): string
+    public function compileSelect(string $table, array $columns, array $wheres, array $orders, array $joins, ?int $limit = null, ?int $offset = null): string
     {
         $sql = "SELECT ";
 
@@ -42,7 +42,7 @@ class SqlServerDriver implements DriverInterface
         // If we have offset but no order, we need to add a default order
         $needsOrderBy = ($offset !== null || $limit !== null);
         
-        $sql .= implode(', ', $cols) . " FROM " . $table;
+        $sql .= implode(', ', $columns) . " FROM " . $table;
 
         if (!empty($joins)) {
             $sql .= " " . implode(' ', $joins);

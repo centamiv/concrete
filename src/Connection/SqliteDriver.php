@@ -13,7 +13,7 @@ class SqliteDriver implements DriverInterface
      * @param string $pass
      * @return \PDO
      */
-    public function connect($host, $db, $user, $pass): \PDO
+    public function connect(string $host, string $db, string $user, string $pass): \PDO
     {
         // For SQLite, $db is the file path, $host is ignored
         // $user and $pass are also ignored for file-based SQLite
@@ -28,7 +28,7 @@ class SqliteDriver implements DriverInterface
      * Compile the SELECT query.
      *
      * @param string $table
-     * @param array $cols
+     * @param array $columns
      * @param array $wheres
      * @param array $orders
      * @param array $joins
@@ -36,9 +36,9 @@ class SqliteDriver implements DriverInterface
      * @param int|null $offset
      * @return string
      */
-    public function compileSelect($table, $cols, $wheres, $orders, $joins, ?int $limit = null, ?int $offset = null): string
+    public function compileSelect(string $table, array $columns, array $wheres, array $orders, array $joins, ?int $limit = null, ?int $offset = null): string
     {
-        $sql = "SELECT " . implode(', ', $cols) . " FROM " . $table;
+        $sql = "SELECT " . implode(', ', $columns) . " FROM " . $table;
 
         if (!empty($joins)) {
             $sql .= " " . implode(' ', $joins);

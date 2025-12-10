@@ -13,7 +13,7 @@ class MysqlDriver implements DriverInterface
      * @param string $pass
      * @return \PDO
      */
-    public function connect($host, $db, $user, $pass): \PDO
+    public function connect(string $host, string $db, string $user, string $pass): \PDO
     {
         $dsn = "mysql:host=$host;dbname=$db;charset=utf8mb4";
         return new \PDO($dsn, $user, $pass, [
@@ -26,7 +26,7 @@ class MysqlDriver implements DriverInterface
      * Compile the SELECT query.
      *
      * @param string $table
-     * @param array $cols
+     * @param array $columns
      * @param array $wheres
      * @param array $orders
      * @param array $joins
@@ -34,9 +34,9 @@ class MysqlDriver implements DriverInterface
      * @param int|null $offset
      * @return string
      */
-    public function compileSelect($table, $cols, $wheres, $orders, $joins, ?int $limit = null, ?int $offset = null): string
+    public function compileSelect(string $table, array $columns, array $wheres, array $orders, array $joins, ?int $limit = null, ?int $offset = null): string
     {
-        $sql = "SELECT " . implode(', ', $cols) . " FROM " . $table;
+        $sql = "SELECT " . implode(', ', $columns) . " FROM " . $table;
 
         if (!empty($joins)) {
             $sql .= " " . implode(' ', $joins);
