@@ -14,19 +14,76 @@ composer require centamiv/concrete
 
 To start using Concrete, you need to initialize the database connection. Typically, you would do this in your application's bootstrap file (e.g., `index.php`).
 
+### MySQL
+
 ```php
 use Concrete\Database;
-use Concrete\Connection\MySQLDriver;
+use Concrete\Connection\MysqlDriver;
 
 require 'vendor/autoload.php';
 
 // Initialize the database connection
 Database::init(
-    new MySQLDriver(),
+    new MysqlDriver(),
     '127.0.0.1', // Host
     'my_database', // Database Name
     'root',      // User
     'password'   // Password
+);
+```
+
+### SQLite
+
+```php
+use Concrete\Database;
+use Concrete\Connection\SqliteDriver;
+
+require 'vendor/autoload.php';
+
+// Initialize the database connection
+// For SQLite, the second parameter is the database file path
+Database::init(
+    new SqliteDriver(),
+    '',                        // Host (not used for SQLite)
+    '/path/to/database.sqlite', // Database file path (or ':memory:' for in-memory)
+    '',                        // User (not used for SQLite)
+    ''                         // Password (not used for SQLite)
+);
+```
+
+### PostgreSQL
+
+```php
+use Concrete\Database;
+use Concrete\Connection\PostgresDriver;
+
+require 'vendor/autoload.php';
+
+// Initialize the database connection
+Database::init(
+    new PostgresDriver(),
+    '127.0.0.1',     // Host
+    'my_database',   // Database Name
+    'postgres',      // User
+    'password'       // Password
+);
+```
+
+### SQL Server
+
+```php
+use Concrete\Database;
+use Concrete\Connection\SqlServerDriver;
+
+require 'vendor/autoload.php';
+
+// Initialize the database connection
+Database::init(
+    new SqlServerDriver(),
+    'localhost',     // Host (Server)
+    'my_database',   // Database Name
+    'sa',            // User
+    'password'       // Password
 );
 ```
 
@@ -289,6 +346,10 @@ $users = $builder->table(User::class)
 
 - PHP >= 7.4
 - `ext-pdo` extension
+- For MySQL: `ext-pdo_mysql`
+- For SQLite: `ext-pdo_sqlite`
+- For PostgreSQL: `ext-pdo_pgsql`
+- For SQL Server: `ext-pdo_sqlsrv`
 
 ## Appendix: Laravel Integration
 
@@ -300,15 +361,17 @@ In your `app/Providers/AppServiceProvider.php`, initialize Concrete in the `boot
 
 ```php
 use Concrete\Database;
-use Concrete\Connection\MySQLDriver;
+use Concrete\Connection\MysqlDriver;
+// Or use: PostgresDriver, SqliteDriver, SqlServerDriver
 use Illuminate\Support\Facades\DB;
 
 public function boot()
 {
     // Initialize using the existing Laravel PDO connection
+    // Choose the appropriate driver based on your Laravel database configuration
     Database::initFromPDO(
         DB::connection()->getPdo(),
-        new MySQLDriver()
+        new MysqlDriver() // Use PostgresDriver, SqliteDriver, or SqlServerDriver as needed
     );
 }
 ```
