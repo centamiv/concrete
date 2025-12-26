@@ -14,9 +14,9 @@ class Database
      *
      * @param DriverInterface $driver
      * @param string $host
-     * @param string $db
-     * @param string $user
-     * @param string $pass
+     * @param ?string $db
+     * @param ?string $user
+     * @param ?string $pass
      * @return void
      */
     public static function init(DriverInterface $driver, $host, $db, $user, $pass)
