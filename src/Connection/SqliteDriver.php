@@ -15,9 +15,8 @@ class SqliteDriver implements DriverInterface
      */
     public function connect(string $host, string $db, string $user, string $pass): \PDO
     {
-        // For SQLite, $db is the file path, $host is ignored
-        // $user and $pass are also ignored for file-based SQLite
-        $dsn = "sqlite:$db";
+        // For SQLite, $host is the file path
+        $dsn = "sqlite:$host";
         return new \PDO($dsn, null, null, [
             \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
             \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC

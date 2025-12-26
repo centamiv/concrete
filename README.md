@@ -44,10 +44,7 @@ require 'vendor/autoload.php';
 // For SQLite, the second parameter is the database file path
 Database::init(
     new SqliteDriver(),
-    '',                        // Host (not used for SQLite)
     '/path/to/database.sqlite', // Database file path (or ':memory:' for in-memory)
-    '',                        // User (not used for SQLite)
-    ''                         // Password (not used for SQLite)
 );
 ```
 
