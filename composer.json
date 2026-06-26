@@ -1,6 +1,5 @@
 {
   "name": "centamiv/concrete",
-  "version": "1.0.0",
   "description": "A simple and solid ORM for PHP applications.",
   "type": "library",
   "license": "MIT",
