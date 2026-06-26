@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: version
+        run: |
+          LAST=$(git tag --list 'v*.*.*' --sort=-v:refname | head -1)
+          LAST=${LAST:-v0.0.0}
+
+          MSG=$(git log -1 --pretty=%s)
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "${LAST#v}"
+
+          if echo "$MSG" | grep -qi '\[major\]'; then
+            MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0
+          elif echo "$MSG" | grep -qi '\[minor\]'; then
+            MINOR=$((MINOR+1)); PATCH=0
+          else
+            PATCH=$((PATCH+1))
+          fi
+
+          echo "tag=v${MAJOR}.${MINOR}.${PATCH}" >> "$GITHUB_OUTPUT"
+          echo "prev=${LAST}" >> "$GITHUB_OUTPUT"
+
+      - name: Build release notes
+        id: notes
+        run: |
+          PREV="${{ steps.version.outputs.prev }}"
+
+          if [ "$PREV" = "v0.0.0" ]; then
+            # Primo rilascio: tutti i commit su main
+            RANGE="HEAD"
+          else
+            RANGE="${PREV}..HEAD"
+          fi
+
+          # Raggruppa i commit per prefisso convenzionale
+          FEAT=$(git log "$RANGE" --pretty="- %s (%h)" | grep -i '^- feat' || true)
+          FIX=$(git log  "$RANGE" --pretty="- %s (%h)" | grep -i '^- fix'  || true)
+          BREAK=$(git log "$RANGE" --pretty="- %s (%h)" | grep -i '\[major\]' || true)
+          OTHER=$(git log "$RANGE" --pretty="- %s (%h)" | grep -iv '^- feat\|^- fix\|\[major\]' || true)
+
+          BODY=""
+          [ -n "$BREAK" ] && BODY+="### Breaking changes"$'\n'"$BREAK"$'\n\n'
+          [ -n "$FEAT"  ] && BODY+="### New features"$'\n'"$FEAT"$'\n\n'
+          [ -n "$FIX"   ] && BODY+="### Bug fixes"$'\n'"$FIX"$'\n\n'
+          [ -n "$OTHER" ] && BODY+="### Other changes"$'\n'"$OTHER"$'\n\n'
+
+          [ -z "$BODY" ] && BODY="No significant changes."
+
+          # Scrivi in un file per preservare i newline
+          echo "$BODY" > /tmp/release_notes.md
+
+      - name: Create tag and GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG"
+          git push origin "$TAG"
+
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file /tmp/release_notes.md

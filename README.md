@@ -4,15 +4,13 @@
 
 ## Installation
 
-You can install the package via composer:
-
 ```bash
 composer require centamiv/concrete
 ```
 
 ## Configuration
 
-To start using Concrete, you need to initialize the database connection. Typically, you would do this in your application's bootstrap file (e.g., `index.php`).
+Initialize the database connection once, typically in your bootstrap file.
 
 ### MySQL
 
@@ -20,16 +18,7 @@ To start using Concrete, you need to initialize the database connection. Typical
 use Concrete\Database;
 use Concrete\Connection\MysqlDriver;
 
-require 'vendor/autoload.php';
-
-// Initialize the database connection
-Database::init(
-    new MysqlDriver(),
-    '127.0.0.1', // Host
-    'my_database', // Database Name
-    'root',      // User
-    'password'   // Password
-);
+Database::init(new MysqlDriver(), '127.0.0.1', 'my_database', 'root', 'password');
 ```
 
 ### SQLite
@@ -38,14 +27,8 @@ Database::init(
 use Concrete\Database;
 use Concrete\Connection\SqliteDriver;
 
-require 'vendor/autoload.php';
-
-// Initialize the database connection
-// For SQLite, the second parameter is the database file path
-Database::init(
-    new SqliteDriver(),
-    '/path/to/database.sqlite', // Database file path (or ':memory:' for in-memory)
-);
+// Second parameter is the file path (or ':memory:' for in-memory)
+Database::init(new SqliteDriver(), '/path/to/database.sqlite');
 ```
 
 ### PostgreSQL
@@ -54,16 +37,7 @@ Database::init(
 use Concrete\Database;
 use Concrete\Connection\PostgresDriver;
 
-require 'vendor/autoload.php';
-
-// Initialize the database connection
-Database::init(
-    new PostgresDriver(),
-    '127.0.0.1',     // Host
-    'my_database',   // Database Name
-    'postgres',      // User
-    'password'       // Password
-);
+Database::init(new PostgresDriver(), '127.0.0.1', 'my_database', 'postgres', 'password');
 ```
 
 ### SQL Server
@@ -72,23 +46,14 @@ Database::init(
 use Concrete\Database;
 use Concrete\Connection\SqlServerDriver;
 
-require 'vendor/autoload.php';
-
-// Initialize the database connection
-Database::init(
-    new SqlServerDriver(),
-    'localhost',     // Host (Server)
-    'my_database',   // Database Name
-    'sa',            // User
-    'password'       // Password
-);
+Database::init(new SqlServerDriver(), 'localhost', 'my_database', 'sa', 'password');
 ```
 
-## Usage
+---
 
-### Defining Models
+## Defining Models
 
-Create a model class that extends `Concrete\Model`. You need to define the `TABLE` constant. By default, the primary key is assumed to be `id`.
+Extend `Concrete\Model` and declare the `TABLE` constant. The primary key defaults to `id`.
 
 ```php
 namespace App\Models;
@@ -99,44 +64,38 @@ class User extends Model
 {
     public const TABLE = 'users';
 
-    public const COL_ID = 'id';
-    public const COL_NAME = 'name';
-    public const COL_EMAIL = 'email';
-    public const COL_AGE = 'age';
-    public const COL_ACTIVE = 'active';
-    public const COL_ROLE_ID = 'role_id';
+    // Optional: column name constants for type-safe references
+    public const COL_ID         = 'id';
+    public const COL_NAME       = 'name';
+    public const COL_EMAIL      = 'email';
+    public const COL_AGE        = 'age';
+    public const COL_ACTIVE     = 'active';
+    public const COL_ROLE_ID    = 'role_id';
     public const COL_CREATED_AT = 'created_at';
 }
 ```
 
-#### Custom Primary Keys
-
-If your table uses a primary key other than `id`, you can override the `PRIMARY_KEY` constant. Concrete also supports **composite primary keys**.
+### Custom & Composite Primary Keys
 
 ```php
 class Order extends Model
 {
-    public const TABLE = 'orders';
-    
-    // Simple Primary Key
-    public const PRIMARY_KEY = 'id';
+    public const TABLE       = 'orders';
+    public const PRIMARY_KEY = 'order_code'; // custom single key
 }
-
 
 class OrderItem extends Model
 {
-    public const TABLE = 'order_items';
-    
-    // Composite Primary Key
-    public const PRIMARY_KEY = ['order_id', 'product_id'];
+    public const TABLE       = 'order_items';
+    public const PRIMARY_KEY = ['order_id', 'product_id']; // composite key
 }
 ```
 
-### Basic CRUD
+---
 
-#### Creating Records
+## CRUD
 
-To create a new record, instantiate your model, set attributes, and call `save()`.
+### Create
 
 ```php
 $user = new User();
@@ -144,258 +103,344 @@ $user->set(User::COL_NAME, 'Mario Rossi')
      ->set(User::COL_EMAIL, 'mario@example.com')
      ->save();
 
-// Access the auto-incremented ID (if applicable)
-echo $user->get(User::COL_ID); 
+echo $user->get(User::COL_ID); // auto-incremented ID
 ```
 
-#### Retrieving Records
-
-Use the `find()` static method to retrieve a record by its primary key.
+### Read
 
 ```php
-// Find by single primary key
+// Single primary key
 $user = User::find(1);
+echo $user?->get(User::COL_NAME);
 
-if ($user) {
-    echo $user->get(User::COL_NAME);
-}
-
-// Find by composite primary key
+// Composite primary key
 $item = OrderItem::find(['order_id' => 10, 'product_id' => 5]);
 ```
 
-#### Updating Records
-
-Retrieve a record, modify its attributes, and call `save()` again.
+### Update
 
 ```php
 $user = User::find(1);
-$user->set(User::COL_EMAIL, 'new_email@example.com');
-$user->save();
+$user->set(User::COL_EMAIL, 'new@example.com');
+$user->save(); // only dirty attributes are sent to the database
 ```
 
-#### Deleting Records
-
-Retrieve a record and call `delete()`.
+### Delete
 
 ```php
 $user = User::find(1);
-if ($user) {
-    $user->delete();
-}
+$user?->delete();
 ```
 
-### Query Builder
+---
 
-Concrete provides a fluent Query Builder for more complex queries. You can access it via the `query()` static method on your models.
+## Query Builder
 
-#### Filtering (`where`)
+Access the builder via `Model::query()`.
+
+### Filtering
+
+#### `where`
 
 ```php
 $users = User::query()
     ->where(User::col(User::COL_ACTIVE), '=', 1)
     ->where(User::col(User::COL_AGE), '>', 18)
     ->get();
-
-foreach ($users as $user) {
-    echo $user->get(User::COL_NAME);
-}
 ```
 
-#### Ordering (`orderBy`)
+Supported operators: `=` `!=` `<>` `<` `>` `<=` `>=` `LIKE` `NOT LIKE` `IN` `NOT IN` `IS` `IS NOT`
+
+#### `whereIn` / `whereNotIn`
+
+Pass a plain array or a **subquery Builder** as the second argument.
+
+```php
+// Array literal
+$users = User::query()
+    ->whereIn(User::col(User::COL_ROLE_ID), [1, 2, 3])
+    ->get();
+
+// Subquery
+$users = User::query()
+    ->whereIn(
+        User::col(User::COL_ID),
+        Order::query()
+            ->select('user_id')
+            ->where(Order::col('status'), '=', 'paid')
+    )
+    ->get();
+
+// NOT IN
+$users = User::query()
+    ->whereNotIn(User::col(User::COL_ID), [10, 20])
+    ->get();
+```
+
+> An empty array in `whereIn` generates `1 = 0` (always false); in `whereNotIn` it generates `1 = 1` (always true).
+
+#### `whereExists` / `whereNotExists`
 
 ```php
 $users = User::query()
-    ->where(User::col(User::COL_ACTIVE), '=', 1)
+    ->whereExists(
+        Order::query()
+            ->whereColumn(Order::col('user_id'), '=', User::col(User::COL_ID))
+            ->where(Order::col('status'), '=', 'paid')
+    )
+    ->get();
+```
+
+#### `whereColumn`
+
+Compare two column identifiers without parameterization — used for **correlated subqueries**.
+
+```php
+Order::query()->whereColumn(Order::col('user_id'), '=', User::col(User::COL_ID));
+```
+
+Supported operators: `=` `!=` `<>` `<` `>` `<=` `>=`
+
+---
+
+### Ordering
+
+```php
+$users = User::query()
     ->orderBy(User::col(User::COL_CREATED_AT), 'DESC')
     ->get();
 ```
 
-#### Joins (`join`, `leftJoin`)
+---
 
-You can join other tables using the `join` or `leftJoin` methods.
-
-```php
-// Assuming Role model exists with constants
-$users = User::query()
-    ->select(User::col('*'), Role::colAs(Role::COL_NAME, 'role_name'))
-    ->join(Role::TABLE, User::col(User::COL_ROLE_ID), '=', Role::col(Role::COL_ID))
-    ->get();
-```
-
-You can also use `rightJoin`:
+### Joins
 
 ```php
 $users = User::query()
-    ->rightJoin(Role::TABLE, User::col(User::COL_ROLE_ID), '=', Role::col(Role::COL_ID))
+    ->select(User::col('*'), Role::colAs('name', 'role_name'))
+    ->join(Role::TABLE, User::col(User::COL_ROLE_ID), '=', Role::col('id'))
+    ->get();
+
+// Left / right join
+User::query()->leftJoin(Role::TABLE, User::col(User::COL_ROLE_ID), '=', Role::col('id'));
+User::query()->rightJoin(Role::TABLE, User::col(User::COL_ROLE_ID), '=', Role::col('id'));
+```
+
+---
+
+### Conditional Selection — `CASE`
+
+Build `CASE WHEN … THEN … ELSE … END` expressions with `When`. Pass them directly to `select()`.
+
+```php
+use Concrete\Query\When;
+
+$users = User::query()
+    ->select(
+        User::col(User::COL_ID),
+        User::col(User::COL_NAME),
+        When::make()
+            ->when(User::col(User::COL_ACTIVE), '=', 1)->then('Active')
+            ->when(User::col(User::COL_ACTIVE), '=', 0)->then('Inactive')
+            ->else('Unknown')
+            ->as('status_label'),
+        When::make()
+            ->when(User::col(User::COL_AGE), '>=', 18)->then(1)
+            ->else(0)
+            ->as('is_adult')
+    )
     ->get();
 ```
 
-#### Updating Records (`update`)
+**Result type rules for `then()` / `else()`:**
+
+| PHP type | SQL |
+|----------|-----|
+| `int` / `float` | embedded literal (`1`, `3.14`) |
+| `null` | `NULL` literal |
+| `string` | bound as PDO named parameter |
+
+---
+
+### Scalar Subqueries in `select()`
+
+Use `Subquery` to embed a correlated scalar subquery as a column.
 
 ```php
-$affected = User::query()
+use Concrete\Query\Subquery;
+
+$users = User::query()
+    ->select(
+        User::col(User::COL_ID),
+        User::col(User::COL_NAME),
+        Subquery::make(
+            Order::query()
+                ->select('COUNT(*)')
+                ->whereColumn(Order::col('user_id'), '=', User::col(User::COL_ID))
+        )->as('order_count')
+    )
+    ->get();
+// → SELECT users.id, users.name,
+//     (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) AS order_count
+//   FROM users
+```
+
+---
+
+### UNION
+
+Combine the results of two or more queries with `union()` (distinct rows) or `unionAll()` (all rows including duplicates).
+
+```php
+$activeUsers = User::query()
+    ->select(User::col(User::COL_ID), User::col(User::COL_NAME))
+    ->where(User::col(User::COL_ACTIVE), '=', 1);
+
+$adminUsers = User::query()
+    ->select(User::col(User::COL_ID), User::col(User::COL_NAME))
+    ->where(User::col(User::COL_ROLE_ID), '=', 99);
+
+// Distinct rows
+$result = $activeUsers
+    ->union($adminUsers)
+    ->orderBy(User::col(User::COL_NAME), 'ASC')
+    ->take(20)
+    ->get();
+
+// Including duplicates
+$result = $activeUsers->unionAll($adminUsers)->get();
+```
+
+`orderBy()`, `take()`, and `skip()` called on the **outermost** builder apply to the whole union result.
+
+---
+
+### Limiting Results
+
+```php
+$users = User::query()
+    ->take(10)  // LIMIT 10
+    ->skip(20)  // OFFSET 20
+    ->get();
+```
+
+---
+
+### Aggregates & Helpers
+
+```php
+// Total count
+$total = User::query()->where(User::col(User::COL_ACTIVE), '=', 1)->count();
+
+// First matching record
+$user = User::query()->where(User::col(User::COL_EMAIL), '=', 'mario@example.com')->first();
+
+// Check existence
+$exists = User::query()->where(User::col(User::COL_AGE), '<', 18)->exists();
+```
+
+---
+
+### Bulk Update & Delete via Builder
+
+```php
+// Update active flag for all inactive users
+User::query()
     ->where(User::col(User::COL_ACTIVE), '=', 0)
-    ->update([User::col(User::COL_ACTIVE) => 1]);
-```
+    ->update([User::COL_ACTIVE => 1]);
 
-#### Deleting Records (`delete`)
-
-```php
-$deleted = User::query()
+// Delete underage users
+User::query()
     ->where(User::col(User::COL_AGE), '<', 18)
     ->delete();
 ```
 
-#### Limiting Results (`take`, `skip`)
+---
+
+### Raw Arrays
+
+Use `getRows()` / `firstRow()` to retrieve plain associative arrays instead of model instances.
 
 ```php
-$users = User::query()
-    ->take(10) // LIMIT 10
-    ->skip(5)  // OFFSET 5
-    ->get();
-```
-
-#### Aggregates & Helpers
-
-- **`count()`**: Returns the number of records matching the query.
-- **`first()`**: Returns the first model instance or `null`.
-- **`exists()`**: Returns `true` if any records match the query.
-
-```php
-$count = User::query()->where(User::col(User::COL_ACTIVE), '=', 1)->count();
-
-$user = User::query()->where(User::col(User::COL_EMAIL), '=', 'test@example.com')->first();
-
-if (User::query()->where(User::col(User::COL_AGE), '<', 18)->exists()) {
-    // ...
-}
-```
-
-#### Fetching Arrays
-
-If you prefer to work with raw associative arrays instead of Model instances, you can use `getRows()` or `firstRow()`.
-
-```php
-// Returns an array of associative arrays
-$users = User::query()->where('active', '=', 1)->getRows();
-foreach ($users as $user) {
-    echo $user['name']; // Access as array
+$rows = User::query()->where(User::col(User::COL_ACTIVE), '=', 1)->getRows();
+foreach ($rows as $row) {
+    echo $row['name'];
 }
 
-// Returns a single associative array or null
-$user = User::query()->find(1)->firstRow();
-if ($user) {
-    echo $user['email'];
-}
+$row = User::query()->where(User::col(User::COL_EMAIL), '=', 'mario@example.com')->firstRow();
+echo $row['email'] ?? 'not found';
 ```
 
-### Helper Methods
+---
 
-- **`exists()`**: Checks if the model instance exists in the database (based on primary key presence).
-- **`fill(array $data)`**: Mass assign attributes from an array.
-- **`col(string $column, ?string $alias = null)`**: Helper to get fully qualified column names (e.g., `users.name`).
-- **`colAs(string $column, string $columnAs, ?string $tableAlias = null)`**: Helper to get fully qualified column names with an alias (e.g., `users.name as user_name`).
+## Advanced
 
-## Advanced Usage
-
-### Debugging Queries
-
-You can inspect the generated SQL query using the `sql()` method on the builder.
+### Inspecting the Generated SQL
 
 ```php
-$query = User::query()
-    ->where(User::col(User::COL_ACTIVE), '=', 1);
+$sql = User::query()
+    ->where(User::col(User::COL_ACTIVE), '=', 1)
+    ->sql();
 
-echo $query->sql(); 
-// Outputs: SELECT users.* FROM users WHERE users.active = :users_active0
+// SELECT * FROM users WHERE users.active = :users_active0
 ```
 
-### Raw Queries
-
-For complex operations not supported by the Query Builder, you can access the underlying PDO connection.
+### Raw PDO Queries
 
 ```php
 use Concrete\Database;
 
-$db = Database::getConnection();
-
-// Complex Raw Query
-$stmt = $db->query("SELECT count(*) as count FROM users GROUP BY age");
-$stats = $stmt->fetchAll();
+$stmt = Database::getConnection()->query('SELECT COUNT(*) as n FROM users GROUP BY age');
+$rows = $stmt->fetchAll();
 ```
 
-### Standalone Query Builder
-
-While `Model::query()` is the preferred way, you can use the `Builder` directly.
+### Standalone Builder
 
 ```php
 use Concrete\Query\Builder;
-use App\Models\User;
 
 $builder = new Builder();
 $users = $builder->table(User::class)
-    ->where('active', '=', 1)
+    ->where(User::col(User::COL_ACTIVE), '=', 1)
     ->get();
 ```
+
+---
 
 ## Requirements
 
 - PHP >= 7.4
-- `ext-pdo` extension
+- `ext-pdo`
 - For MySQL: `ext-pdo_mysql`
 - For SQLite: `ext-pdo_sqlite`
 - For PostgreSQL: `ext-pdo_pgsql`
 - For SQL Server: `ext-pdo_sqlsrv`
 
-## Appendix: Laravel Integration
+---
 
-If you want to use **Concrete** within a Laravel application and reuse the existing Laravel database connection, you can use the `initFromPDO` method.
+## Laravel Integration
 
-### 1. Initialize in AppServiceProvider
-
-In your `app/Providers/AppServiceProvider.php`, initialize Concrete in the `boot` method.
+Reuse an existing Laravel PDO connection via `initFromPDO`.
 
 ```php
+// app/Providers/AppServiceProvider.php
 use Concrete\Database;
 use Concrete\Connection\MysqlDriver;
-// Or use: PostgresDriver, SqliteDriver, SqlServerDriver
 use Illuminate\Support\Facades\DB;
 
-public function boot()
+public function boot(): void
 {
-    // Initialize using the existing Laravel PDO connection
-    // Choose the appropriate driver based on your Laravel database configuration
     Database::initFromPDO(
         DB::connection()->getPdo(),
-        new MysqlDriver() // Use PostgresDriver, SqliteDriver, or SqlServerDriver as needed
+        new MysqlDriver()
     );
 }
 ```
 
-### 2. Usage Example
+Then use Concrete models alongside Eloquent in your controllers.
 
-Now you can use Concrete models alongside Eloquent models.
-
-```php
-namespace App\Http\Controllers;
-
-use App\Models\Concrete\User; // Your Concrete Model
-
-class UserController extends Controller
-{
-    public function index()
-    {
-        // Use Concrete to fetch users using Laravel's connection
-        $users = User::query()
-            ->where(User::col(User::COL_ACTIVE), '=', 1)
-            ->get();
-
-        return view('users.index', ['users' => $users]);
-    }
-}
-```
+---
 
 ## License
 
-This library is open-sourced software licensed under the MIT license.
+MIT
