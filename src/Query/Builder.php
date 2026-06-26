@@ -18,6 +18,9 @@ class Builder
     protected array $columns = ['*'];
     protected ?int $limit = null;
     protected ?int $offset = null;
+    protected array $unions = [];
+
+    private static int $unionCount = 0;
 
     /**
      * Set the table and model class for the query.
@@ -34,20 +37,25 @@ class Builder
 
     /**
      * Set the columns to be selected.
+     * Accepts plain column names, When, or Subquery instances.
      *
-     * @param string ...$cols
+     * @param string|When|Subquery ...$cols
      * @return $this
      */
-    public function select(string ...$cols): self
+    public function select(...$cols): self
     {
-        // Map columns: if they don't contain a dot, add the current table
-        $this->columns = array_map(function ($col) {
-            if (strpos($col, '.') === false && $col !== '*') {
-                return $this->table . '.' . $col;
+        $this->columns = [];
+        foreach ($cols as $col) {
+            if ($col instanceof When || $col instanceof Subquery) {
+                $this->columns[] = $col;
+                continue;
             }
-            return $col;
-        }, $cols);
-
+            if (strpos($col, '.') === false && $col !== '*') {
+                $this->columns[] = $this->table . '.' . $col;
+            } else {
+                $this->columns[] = $col;
+            }
+        }
         return $this;
     }
 
@@ -76,6 +84,40 @@ class Builder
     }
 
     /**
+     * Add a UNION clause (distinct rows).
+     *
+     * @param Builder $query
+     * @return $this
+     */
+    public function union(Builder $query): self
+    {
+        $this->unions[] = ['builder' => $query, 'all' => false];
+        return $this;
+    }
+
+    /**
+     * Add a UNION ALL clause (all rows, including duplicates).
+     *
+     * @param Builder $query
+     * @return $this
+     */
+    public function unionAll(Builder $query): self
+    {
+        $this->unions[] = ['builder' => $query, 'all' => true];
+        return $this;
+    }
+
+    /**
+     * Return the PDO parameters currently bound to this query.
+     *
+     * @return array
+     */
+    public function getParams(): array
+    {
+        return $this->params;
+    }
+
+    /**
      * Get the generated SQL string.
      *
      * @return string
@@ -84,15 +126,72 @@ class Builder
     {
         $driver = Database::getDriver();
 
-        return $driver->compileSelect(
-            $this->table,
-            $this->columns,
-            $this->wheres,
-            $this->orders,
-            $this->joins,
-            $this->limit,
-            $this->offset
-        );
+        // Resolve any column expressions and collect their params.
+        $columns = [];
+        foreach ($this->columns as $col) {
+            if ($col instanceof When || $col instanceof Subquery) {
+                foreach ($col->getParams() as $key => $val) {
+                    $this->params[$key] = $val;
+                }
+                $columns[] = $col->toSql();
+            } else {
+                $columns[] = $col;
+            }
+        }
+
+        if (empty($this->unions)) {
+            return $driver->compileSelect(
+                $this->table,
+                $columns,
+                $this->wheres,
+                $this->orders,
+                $this->joins,
+                $this->limit,
+                $this->offset
+            );
+        }
+
+        // UNION: compile main part without ORDER BY / LIMIT / OFFSET —
+        // those are applied to the whole result at the end.
+        $sql = '(' . $driver->compileSelect(
+            $this->table, $columns, $this->wheres, [], $this->joins, null, null
+        ) . ')';
+
+        foreach ($this->unions as $union) {
+            $sub = $union['builder'];
+            $subSql = $sub->sql();
+            $subParams = $sub->getParams();
+
+            self::$unionCount++;
+            $prefix = 'u' . self::$unionCount . '_';
+
+            foreach ($subParams as $key => $val) {
+                $newKey = $prefix . $key;
+                $subSql = preg_replace('/:' . preg_quote($key, '/') . '\b/', ':' . $newKey, $subSql);
+                $this->params[$newKey] = $val;
+            }
+
+            $keyword = $union['all'] ? 'UNION ALL' : 'UNION';
+            $sql .= " $keyword ($subSql)";
+        }
+
+        if (!empty($this->orders)) {
+            $sql .= ' ORDER BY ' . implode(', ', $this->orders);
+        }
+
+        $limit  = $this->limit;
+        $offset = $this->offset;
+        if ($offset !== null && $limit === null) {
+            $limit = PHP_INT_MAX;
+        }
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . $limit;
+        }
+        if ($offset !== null) {
+            $sql .= ' OFFSET ' . $offset;
+        }
+
+        return $sql;
     }
 
     /**
