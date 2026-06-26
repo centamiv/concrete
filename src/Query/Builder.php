@@ -138,7 +138,7 @@ class Builder
      */
     public function first()
     {
-        return $this->take(1)->get()[0] ?? null;
+        return (clone $this)->take(1)->get()[0] ?? null;
     }
 
     /**
@@ -148,7 +148,7 @@ class Builder
      */
     public function firstRow(): ?array
     {
-        return $this->take(1)->getRows()[0] ?? null;
+        return (clone $this)->take(1)->getRows()[0] ?? null;
     }
 
     /**

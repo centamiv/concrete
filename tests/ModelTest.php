@@ -60,7 +60,7 @@ class ModelTest extends TestCase
         $stmt = $this->createMock(\PDOStatement::class);
         $stmt->expects($this->once())
             ->method('execute')
-            ->with(['id0' => 1]);
+            ->with(['users_id0' => 1]);
         $stmt->expects($this->once())
             ->method('rowCount')
             ->willReturn(1);
@@ -68,12 +68,12 @@ class ModelTest extends TestCase
         $pdo = $this->createMock(\PDO::class);
         $pdo->expects($this->once())
             ->method('prepare')
-            ->with('DELETE FROM users WHERE id = :id0')
+            ->with('DELETE FROM users WHERE users.id = :users_id0')
             ->willReturn($stmt);
 
         $driver = $this->createMock(\Concrete\Connection\DriverInterface::class);
         $driver->method('connect')->willReturn($pdo);
-        $driver->method('compileDelete')->willReturn('DELETE FROM users WHERE id = :id0');
+        $driver->method('compileDelete')->willReturn('DELETE FROM users WHERE users.id = :users_id0');
 
         \Concrete\Database::init($driver, 'h', 'd', 'u', 'p');
 

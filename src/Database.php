@@ -45,6 +45,9 @@ class Database
      */
     public static function getConnection(): \PDO
     {
+        if (self::$pdo === null) {
+            throw new \RuntimeException('Database not initialized. Call Database::init() first.');
+        }
         return self::$pdo;
     }
 
@@ -55,6 +58,9 @@ class Database
      */
     public static function getDriver(): DriverInterface
     {
+        if (self::$driver === null) {
+            throw new \RuntimeException('Database not initialized. Call Database::init() first.');
+        }
         return self::$driver;
     }
 }

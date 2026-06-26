@@ -15,7 +15,9 @@ trait Orderable
      */
     public function orderBy(string $column, string $direction = 'ASC'): self
     {
-        // Basic validation for security
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/', $column)) {
+            throw new \InvalidArgumentException("Invalid column identifier: '$column'");
+        }
         $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
         $this->orders[] = "$column $direction";
         return $this;

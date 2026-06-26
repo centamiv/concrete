@@ -18,6 +18,22 @@ trait Joinable
      */
     public function join(string $table, string $first, string $operator, string $second, string $type = 'INNER'): self
     {
+        $type = strtoupper(trim($type));
+        $allowedTypes = ['INNER', 'LEFT', 'RIGHT', 'CROSS', 'FULL', 'FULL OUTER'];
+        if (!in_array($type, $allowedTypes, true)) {
+            throw new \InvalidArgumentException("Invalid join type: '$type'");
+        }
+        $allowedOperators = ['=', '!=', '<>', '<', '>', '<=', '>='];
+        $operator = strtoupper(trim($operator));
+        if (!in_array($operator, $allowedOperators, true)) {
+            throw new \InvalidArgumentException("Invalid join operator: '$operator'");
+        }
+        $identifierPattern = '/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/';
+        foreach ([$table, $first, $second] as $identifier) {
+            if (!preg_match($identifierPattern, $identifier)) {
+                throw new \InvalidArgumentException("Invalid SQL identifier: '$identifier'");
+            }
+        }
         $this->joins[] = "$type JOIN $table ON $first $operator $second";
         return $this;
     }
