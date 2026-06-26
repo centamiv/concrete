@@ -50,6 +50,10 @@ class MysqlDriver implements DriverInterface
             $sql .= " ORDER BY " . implode(', ', $orders);
         }
 
+        if ($offset !== null && $limit === null) {
+            $limit = PHP_INT_MAX;
+        }
+
         if ($limit !== null) {
             $sql .= " LIMIT $limit";
         }

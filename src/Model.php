@@ -61,7 +61,8 @@ abstract class Model
     {
         $pks = $this->getPrimaryKeyNames();
         foreach ($pks as $pk) {
-            if (empty($this->attributes[$pk])) {
+            $val = $this->attributes[$pk] ?? null;
+            if ($val === null || $val === '') {
                 return false;
             }
         }
@@ -235,6 +236,12 @@ abstract class Model
                 return $this;
             }
 
+            foreach (array_keys($updateData) as $col) {
+                if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $col)) {
+                    throw new \InvalidArgumentException("Invalid column name: '$col'");
+                }
+            }
+
             $sets = array_map(fn($k) => "$k = :$k", array_keys($updateData));
 
             $wheres = [];
@@ -252,6 +259,12 @@ abstract class Model
 
         } else {
 
+            foreach (array_keys($data) as $col) {
+                if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $col)) {
+                    throw new \InvalidArgumentException("Invalid column name: '$col'");
+                }
+            }
+
             $cols = implode(', ', array_keys($data));
             $placeholders = ':' . implode(', :', array_keys($data));
             $sql = "INSERT INTO $table ($cols) VALUES ($placeholders)";
@@ -260,7 +273,8 @@ abstract class Model
             $stmt->execute($data);
 
             // If the key is single and was not set (AUTO_INCREMENT), retrieve the ID
-            if (count($pks) === 1 && empty($data[$pks[0]])) {
+            $pkVal = $data[$pks[0]] ?? null;
+            if (count($pks) === 1 && ($pkVal === null || $pkVal === '')) {
                 $this->attributes[$pks[0]] = $db->lastInsertId();
             }
             // Note: With composite keys usually AUTO_INCREMENT is not used,
@@ -287,7 +301,7 @@ abstract class Model
         $pks = $this->getPrimaryKeyNames();
 
         foreach ($pks as $pk) {
-            $query->where($pk, '=', $this->attributes[$pk]);
+            $query->where(static::col($pk), '=', $this->attributes[$pk]);
         }
 
         return $query->delete() > 0;
